@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 import pickle
 import numpy as np
+import math
+import sys
 
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import NMF, PCA, TruncatedSVD, LatentDirichletAllocation
@@ -19,21 +21,11 @@ available_languages = [
     'el',
     'en',
     'es',
-    'fi',
     'fr',
-    'hu',
-    'it',
-    'ja',
-    'kr',
-    'nl',
     'no',
-    'pl',
     'pt',
     'ru',
-    'sk',
-    'sv',
     'tr',
-    'zh',
     ]
 
 
@@ -69,9 +61,7 @@ raw_text = [str(x) for x in raw_text]
 print("Number of Samples:", len(raw_text))
 
 clean_text = [" ".join([   # joins a list of words back together with spaces in between them
-                            re.sub(r'\W+', '', # force alphanumeric (after doing @ and # checks)
-                                    word.replace('"','').lower()) # force lower case, remove double quotes
-                                for word in tweet.split() # go word by word and keep them if...
+                            word.lower() for word in tweet.split() # go word by word and keep them if...
                                     if not word.startswith('@') and # they don't start with @, #, or http
                                     not word.startswith('#') and
                                     not word.startswith('http')]
@@ -81,14 +71,37 @@ clean_text = [" ".join([   # joins a list of words back together with spaces in 
 
 Language_Tweet_Mat = np.zeros((len(available_languages),len(clean_text)))
 
-for lang in available_languages: #counts for each tweet the number of stop words of each language and arranges this in a matrix. Probably not very efficient...
-    for tweet in clean_text:
+for (j,lang) in enumerate(available_languages): #counts for each tweet the number of stop words of each language and arranges this in a matrix. Probably not very efficient...
+    lang_set = set(get_stop_words(lang))
+    length = len(get_stop_words(lang))
+    for (i,tweet) in enumerate(clean_text):
+        stop_words_in_tweet = [word for word in tweet.split() if word.decode('ascii') in lang_set]
+        Language_Tweet_Mat[j,i] = float(len(stop_words_in_tweet))/length
 
-        stop_words_in_tweet = [word for word in tweet.split() if word.decode('ascii') in set(get_stop_words(lang))]
-        Language_Tweet_Mat[available_languages.index(lang),clean_text.index(tweet)] = len(stop_words_in_tweet)
+for (i,tweet) in enumerate(clean_text):
+    q = 0;
+    for (j,lang) in enumerate(available_languages):
+        q = q+Language_Tweet_Mat[j,i]*Language_Tweet_Mat[j,i]
+    if q > 0:
+        for (j,lang) in enumerate(available_languages):
+            Language_Tweet_Mat[j,i] = Language_Tweet_Mat[j,i]/math.sqrt(q)
 
-pickle.dump(raw_data, open('language_tweet_mat.pkl','wb'))
+pickle.dump(Language_Tweet_Mat, open('language_tweet_mat.pkl','wb'))
 
 for tweet in clean_text[:50]:
     print(tweet)
     print(available_languages[np.argmax(Language_Tweet_Mat[:,clean_text.index(tweet)])])
+
+(W, H) = pickle.load(open('../NMF/NMF_500_topics_WH.pkl','rb'))
+names = np.array(pickle.load(open('TF_IDF_feature_names.pkl','rb')))
+
+Language_Topic_Mat = np.dot(Language_Tweet_Mat,W)
+
+Topic_Language_Mat = Language_Topic_Mat.T
+
+pickle.dump(Topic_Language_Mat, open('topic_language_mat.pkl','wb'))
+
+sorted = [available_languages[np.argmax(x)] for x in Topic_Language_Mat]
+for (i,x) in enumerate(sorted):
+    print(i)
+    print(x)
