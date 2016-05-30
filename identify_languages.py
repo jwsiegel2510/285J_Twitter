@@ -81,10 +81,10 @@ for (j,lang) in enumerate(available_languages): #counts for each tweet the numbe
 for (i,tweet) in enumerate(clean_text):
     q = 0;
     for (j,lang) in enumerate(available_languages):
-        q = q+Language_Tweet_Mat[j,i]*Language_Tweet_Mat[j,i]
+        q = q+Language_Tweet_Mat[j,i]
     if q > 0:
         for (j,lang) in enumerate(available_languages):
-            Language_Tweet_Mat[j,i] = Language_Tweet_Mat[j,i]/math.sqrt(q)
+            Language_Tweet_Mat[j,i] = Language_Tweet_Mat[j,i]/q
 
 pickle.dump(Language_Tweet_Mat, open('language_tweet_mat.pkl','wb'))
 
@@ -92,16 +92,44 @@ for tweet in clean_text[:50]:
     print(tweet)
     print(available_languages[np.argmax(Language_Tweet_Mat[:,clean_text.index(tweet)])])
 
-(W, H) = pickle.load(open('../NMF/NMF_500_topics_WH.pkl','rb'))
+(W, H) = pickle.load(open('../LDA_WH_matrices/LDA_100_topics_WH.pkl','rb'))
 names = np.array(pickle.load(open('TF_IDF_feature_names.pkl','rb')))
 
 Language_Topic_Mat = np.dot(Language_Tweet_Mat,W)
 
 Topic_Language_Mat = Language_Topic_Mat.T
 
+Entropies = []
+
+for i in range(len(H)):
+    s = np.sum(Topic_Language_Mat[i,:])
+    entropy = 0.0
+    for j in range(len(available_languages)):
+        if Topic_Language_Mat[i,j] > 0:
+            p = Topic_Language_Mat[i,j]/s
+            entropy -= p*math.log(p)
+            print(p)
+    print("\n")
+    Entropies.append(entropy)
+
+entropy = 0
+s = np.sum(Language_Tweet_Mat)
+for i in range(len(available_languages)):
+    p = np.sum(Language_Tweet_Mat[i])/s
+    if p > 0:
+        entropy -= p*math.log(p)
+
+for i in Entropies:
+    print(i)
+
+print("\n")
+
+print(np.sum(Entropies)/len(Entropies))
+
+print("\n")
+
+print(entropy)
+
 pickle.dump(Topic_Language_Mat, open('topic_language_mat.pkl','wb'))
 
 sorted = [available_languages[np.argmax(x)] for x in Topic_Language_Mat]
-for (i,x) in enumerate(sorted):
-    print(i)
-    print(x)
