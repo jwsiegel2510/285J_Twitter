@@ -76,7 +76,7 @@ for (j,lang) in enumerate(available_languages): #counts for each tweet the numbe
     length = len(get_stop_words(lang))
     for (i,tweet) in enumerate(clean_text):
         stop_words_in_tweet = [word for word in tweet.split() if word.decode('ascii') in lang_set]
-        Language_Tweet_Mat[j,i] = float(len(stop_words_in_tweet))/length
+        Language_Tweet_Mat[j,i] = float(len(stop_words_in_tweet))
 
 for (i,tweet) in enumerate(clean_text):
     q = 0;
@@ -119,8 +119,8 @@ for i in range(len(available_languages)):
     if p > 0:
         entropy -= p*math.log(p)
 
-for i in Entropies:
-    print(i)
+for i,j in zip(np.argsort(Entropies),np.sort(Entropies)):
+    print(i,j)
 
 print("\n")
 
