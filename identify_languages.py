@@ -108,7 +108,7 @@ for i in range(len(H)):
         if Topic_Language_Mat[i,j] > 0:
             p = Topic_Language_Mat[i,j]/s
             entropy -= p*math.log(p)
-            print(p)
+            print(i," ",p)
     print("\n")
     Entropies.append(entropy)
 
